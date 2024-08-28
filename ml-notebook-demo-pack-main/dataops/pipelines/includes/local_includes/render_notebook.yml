@@ -1,0 +1,17 @@
+Render Notebook:
+  stage: Create Outputs
+  extends:
+    - .agent_tag
+  image: $DATAOPS_UTILS_RUNNER_IMAGE
+  variables:
+    DATAOPS_TEMPLATES_DIR: $CI_PROJECT_DIR/solution/notebook
+  script:
+    - /dataops || true
+    - ls -lisa $DATAOPS_TEMPLATES_DIR
+    - cat $DATAOPS_TEMPLATES_DIR/Partitioned_ml_model/partitioned_ml_model.ipynb
+  artifacts:
+    when: always
+    paths:
+      - $DATAOPS_TEMPLATES_DIR
+  icon: ${DOCS_ICON}
+

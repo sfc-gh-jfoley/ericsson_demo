@@ -1,0 +1,11 @@
+dataops/modelling/dbt_packages
+.vscode/settings.json
+.env
+
+snowflake.log
+solution/homepage/solution_homepage-1
+solution/homepage/solution_homepage.md
+dataops/snowflake/databases.yml
+dataops/snowflake/roles.yml
+dataops/snowflake/warehouses.yml
+dataops/snowflake/hooks.yml

@@ -1,0 +1,39 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Open Notebook",
+            "detail": "Open the example solution notebook",
+            "type": "shell",
+            "command": "code \"solution/notebook/example.ipynb\"",
+            "options": {
+                "statusbar": {
+                    "label" : "$(star-full) Open Notebook"
+                  },
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            }
+        },
+        {
+            "label": "Open Streamlit",
+            "detail": "Open the example solution streamlit app",
+            "type": "shell",
+            "command": "export PATH=\"$PYENV_ROOT/bin:$PATH\" && eval \"$(pyenv init -)\" && streamlit run solution/streamlit/example.py",
+            "options": {
+                "statusbar": {
+                    "label" : "$(star-full) Open Streamlit"
+                  },
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            }
+        }
+    ]
+}

@@ -1,0 +1,8 @@
+vscode:
+  extensions:
+    - actboy168.tasks
+ports:
+  - name: Streamlit App Preview
+    description: A browser view of the streamlit app.
+    port: 8501
+    onOpen: open-preview

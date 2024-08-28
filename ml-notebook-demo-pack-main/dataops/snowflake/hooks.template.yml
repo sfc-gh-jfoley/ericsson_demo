@@ -1,0 +1,85 @@
+{% set compute_pool_name = env.DATAOPS_PREFIX ~ '_POOL' %}
+{% set compute_pool_name_2 = env.DATAOPS_PREFIX ~ '_GPU_5_S_POOL' %}
+{% set admin_role_name = env.DATAOPS_PREFIX ~ '_ADMIN' %}
+{% set ds_role_name = env.DATAOPS_PREFIX ~ '_DATA_SCIENTIST' %}
+
+account_level_hooks:
+  post_hooks:
+
+    # ## Security Integration
+    # - environment: snowflake
+    #   command: >-
+    #     CREATE OR REPLACE SECURITY INTEGRATION {{ security_integration_name }}
+    #     TYPE = OAUTH
+    #     OAUTH_CLIENT = SNOWSERVICES_INGRESS
+    #     ENABLED = TRUE
+    # - environment: snowflake
+    #   command: GRANT ALL PRIVILEGES ON SECURITY INTEGRATION {{ security_integration_name }} TO ROLE {{ admin_role_name }}
+
+    ## Compute Pool
+    - environment: snowflake
+      command: ALTER COMPUTE POOL IF EXISTS {{ compute_pool_name }} STOP ALL
+    - environment: snowflake
+      command: DROP COMPUTE POOL IF EXISTS {{ compute_pool_name }}
+    - environment: snowflake
+      command: >-
+        CREATE COMPUTE POOL IF NOT EXISTS {{ compute_pool_name }}
+        MIN_NODES = 1
+        MAX_NODES = 1
+        INSTANCE_FAMILY = GPU_NV_M
+    - environment: snowflake
+      command: GRANT ALL PRIVILEGES ON COMPUTE POOL {{ compute_pool_name }} TO ROLE {{ admin_role_name }}
+    - environment: snowflake
+      command: GRANT ALL PRIVILEGES ON COMPUTE POOL {{ compute_pool_name }} TO ROLE {{ ds_role_name }}
+    - environment: snowflake
+      command: ALTER COMPUTE POOL IF EXISTS {{ compute_pool_name_2 }} STOP ALL
+    - environment: snowflake
+      command: DROP COMPUTE POOL IF EXISTS {{ compute_pool_name_2 }}
+      environment: snowflake
+      command: >-
+        CREATE COMPUTE POOL IF NOT EXISTS {{ compute_pool_name_2 }}
+        MIN_NODES = 1
+        MAX_NODES = 5
+        INSTANCE_FAMILY = GPU_NV_S
+    - environment: snowflake
+      command: GRANT ALL PRIVILEGES ON COMPUTE POOL {{ compute_pool_name_2 }} TO ROLE {{ admin_role_name }}
+    - environment: snowflake
+      command: GRANT ALL PRIVILEGES ON COMPUTE POOL {{ compute_pool_name_2 }} TO ROLE {{ ds_role_name }}
+    # Tasks
+    - environment: snowflake
+      command: GRANT EXECUTE TASK, EXECUTE MANAGED TASK ON ACCOUNT TO ROLE {{ admin_role_name }};
+    - environment: snowflake
+      command: GRANT EXECUTE TASK, EXECUTE MANAGED TASK ON ACCOUNT TO ROLE {{ ds_role_name }};
+
+database_level_hooks:
+  post_hooks:
+    - command: "USE WAREHOUSE {{ env.DATAOPS_CATALOG_SOLUTION_PREFIX | lower }}_ds_wh;"
+      environment: snowflake
+    - command: "CREATE STAGE IF NOT EXISTS {{ env.DATAOPS_DATABASE }}.ANALYTICS.notebook DIRECTORY = (ENABLE = TRUE) ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE');"
+      environment: snowflake
+    - command: "GRANT OWNERSHIP ON STAGE {{ env.DATAOPS_DATABASE }}.ANALYTICS.notebook TO ROLE public COPY CURRENT GRANTS;"
+      environment: snowflake
+    - command: "CREATE STAGE IF NOT EXISTS {{ env.DATAOPS_DATABASE }}.ANALYTICS.partitioned_data DIRECTORY = (ENABLE = TRUE) ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE');"
+      environment: snowflake
+    - command: "GRANT OWNERSHIP ON STAGE {{ env.DATAOPS_DATABASE }}.ANALYTICS.partitioned_data TO ROLE public COPY CURRENT GRANTS;"
+      environment: snowflake
+    - command: "CREATE STAGE IF NOT EXISTS {{ env.DATAOPS_DATABASE }}.ANALYTICS.diamonds DIRECTORY = (ENABLE = TRUE) ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE');"
+      environment: snowflake
+    - command: "GRANT OWNERSHIP ON STAGE {{ env.DATAOPS_DATABASE }}.ANALYTICS.diamonds TO ROLE public COPY CURRENT GRANTS;"
+      environment: snowflake
+    - environment: snowflake
+      command: |
+          CREATE OR REPLACE NETWORK RULE {{ env.DATAOPS_DATABASE }}.ANALYTICS.{{ env.DATAOPS_CATALOG_SOLUTION_PREFIX }}_pipy_network_rule
+          TYPE = HOST_PORT
+          MODE = EGRESS
+          VALUE_LIST = ('pypi.org', 'pypi.python.org', 'pythonhosted.org',  'files.pythonhosted.org')
+    - environment: snowflake
+      command: GRANT ALL PRIVILEGES ON NETWORK RULE {{ env.DATAOPS_DATABASE }}.ANALYTICS.{{ env.DATAOPS_CATALOG_SOLUTION_PREFIX }}_pipy_network_rule TO ROLE {{ env.DATAOPS_CATALOG_SOLUTION_PREFIX | lower }}_data_scientist
+    - environment: snowflake
+      command: >-
+        CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION {{ env.DATAOPS_CATALOG_SOLUTION_PREFIX }}_pipy_access_integration
+        ALLOWED_NETWORK_RULES = ({{ env.DATAOPS_DATABASE }}.ANALYTICS.{{ env.DATAOPS_CATALOG_SOLUTION_PREFIX }}_pipy_network_rule)
+        ENABLED = TRUE
+    - environment: snowflake
+      command: GRANT ALL PRIVILEGES ON INTEGRATION {{ env.DATAOPS_CATALOG_SOLUTION_PREFIX }}_pipy_access_integration TO ROLE {{ env.DATAOPS_CATALOG_SOLUTION_PREFIX | lower }}_data_scientist
+
